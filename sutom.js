@@ -6,6 +6,8 @@ var targetLenght
 var start
 var played = []
 
+var lastPicks
+
 main()
 async function main() {
     target = await selectWord()
@@ -18,9 +20,10 @@ async function main() {
 
 // select word for the current game
 async function selectWord() {
-    var words = await search("^.{9}$")
-    // var words = await search("^BISSEXTILE$")
-    var word = rnd(words)
+    var words = await search("^.{13}$")
+    // var words = await search("^PUBLIQUE$")
+    var word = selectOneRng(words)
+    // var word = "PUBLIQUE"
     console.log(word);
     targetLenght = word.split("").length
     start = word.split("")[0]
@@ -63,8 +66,14 @@ async function guess() {
     }
     rules += "$"
 
-    var picks = await search(rules)
-    var pick = rnd(picks)
+    if(!lastPicks){
+        lastPicks = await search(rules)
+    }
+    else{
+        const regex = new RegExp(rules, 'i');
+        lastPicks = lastPicks.filter(x => x.match(regex))
+    }
+    var pick = SelectOneBest(lastPicks)
     return pick.toLocaleUpperCase()
 }
 
@@ -95,7 +104,7 @@ function play(word) {
             result = result + "B"
         }
     }
-    console.log(`${index}: ${word} ${addColor(result)}`);
+    console.log(`${index+1}: ${word} ${addColor(result)}`);
     played.push({ w: word, r: result })
 }
 
@@ -123,7 +132,32 @@ function addColor(input) {
     }).join("")
 }
 
-function rnd(items) {
+function SelectOneBest(items) {
+    var res = items.reduce((agg, val)=>{
+        var count = {}
+        val.split("").forEach(l=>{
+            if(!count.hasOwnProperty(l)){
+                count[l] = 0
+            }
+            count[l] ++ 
+        })
+        var numLettre = Object.keys(count).length
+        if(!agg.hasOwnProperty(numLettre)){
+            agg[numLettre] = []
+        }
+        agg[numLettre].push(val)
+
+        return agg
+    }, {})
+
+    var count = Object.keys(res).map(x=> parseInt(x))
+    var max = Math.max(...count)
+    var maxed = res[`${max}`]
+
+    return maxed[Math.floor(Math.random() * maxed.length)];
+}
+
+function selectOneRng(items) {
     return items[Math.floor(Math.random() * items.length)];
 }
 
